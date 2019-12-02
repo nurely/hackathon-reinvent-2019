@@ -14,13 +14,13 @@ def get_and_process_images(bucket, prefix, predictor):
     paginator = client.get_paginator('list_objects')
 
     # Create a PageIterator from the Paginator
-    bucket = "sagemaker-us-east-1-433390365361"
-    pages = paginator.paginate(Bucket=bucket)
+#     bucket = "sagemaker-us-east-1-433390365361"
+    pages = paginator.paginate(Bucket=bucket, RequestPayer='requester')
 
     positive_list = []
     for page in pages:
         for obj in page['Contents']:
-            response = client.get_object(Bucket=bucket, Key=obj['Key'])
+            response = client.get_object(Bucket=bucket, Key=obj['Key'], RequestPayer='requester')
             data = response['Body']
             results = run_model(predictor, data)
             if results == 'yes': # need to check this
@@ -35,8 +35,11 @@ def get_and_process_images(bucket, prefix, predictor):
 
 
 def run_model(predictor, data):
-    predictor = model.deploy(initial_instance_count=1, instance_type='ml.c5.xlarge')
+    # predictor = model.deploy(initial_instance_count=1, instance_type='ml.c5.xlarge')
+    return 'yes'
 
 
 if __file__ == '__main__':
-    run_model(predictor, data)
+    bucket = "sentinel-s1-l1c"
+    prefix = "GRD/2019/12/2/EW/DH/S1B_EW_GRDM_1SDH_20191202T155715_20191202T155815_019188_0243A1_8786/measurement"
+    get_and_process_images(bucket, prefix, predictor=None)
