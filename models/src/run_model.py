@@ -44,7 +44,7 @@ def run_model(predictor, data):
 #   "Records": [
 #     {
 #       "Sns": {
-#         "Message": "{ "s3Buckets: [ "s3://…1B_EW_GRDM_1SDH_20191202T155715_20191202T155815_019188_0243A1_8786", "s3://…" ] }"
+#         "Message": "{ "s3Buckets: [ "s3://sentinel/…1B_EW_GRDM_1SDH_20191202T155715_20191202T155815_019188_0243A1_8786", "s3://…" ] }"
 #       }
 #     }
 #   ]
@@ -53,5 +53,7 @@ def handler(snsEvent):
     for record in snsEvent["Records"]:
       messageObj = json.loads(record["Sns"]["Message"])
       for bucket in messageObj["s3Buckets"]:
-        prefix = "GRD/2019/12/2/EW/DH/S1B_EW_GRDM_1SDH_20191202T155715_20191202T155815_019188_0243A1_8786/measurement"
-        get_and_process_images(bucket, prefix, predictor=None)
+        baseBucket = bucket.split("//"])[1].split("/")[0]
+        prefix = '/'.join(bucket.split("//"])[1].split("/")[1:])
+        # "GRD/2019/12/2/EW/DH/S1B_EW_GRDM_1SDH_20191202T155715_20191202T155815_019188_0243A1_8786/measurement"
+        get_and_process_images(baseBucket, prefix, predictor=None)
