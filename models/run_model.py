@@ -1,16 +1,37 @@
+import boto3
 from sagemaker.tensorflow.serving import Model
 
 
-model_data = "s3://sagemaker-us-east-1-433390365361/model/model.tar.gz"
-role = 'SagemakerAdmin'
+# _model_data = "s3://sagemaker-us-east-1-433390365361/model/model.tar.gz"
+# _role = 'SagemakerAdmin'
 
 
+def get_and_process_images(bucket, prefix, predictor):
+    # Create a client
+    client = boto3.client('s3', region_name='us-east-1')
+
+    # Create a reusable Paginator
+    paginator = client.get_paginator('list_objects')
+
+    # Create a PageIterator from the Paginator
+    bucket = "sagemaker-us-east-1-433390365361"
+    pages = paginator.paginate(Bucket=bucket)
+
+    positive_list = []
+    for page in pages:
+        for obj in page['Contents']:
+            response = client.get_object(Bucket=bucket, Key=obj['Key'])
+            data = response['Body']
+            results = run_model(predictor, data)
+            if results == 'yes': # need to check this
+                positive_list.append(obj['Key'])
+    return positive_list
 
 
-def deploy_model(model_data, role):
-    model = Model(model_data=model_data, role=role)
-    predictor = model.deploy(initial_instance_count=1, instance_type='ml.c5.xlarge', accelerator_type='ml.eia1.medium')
-    return predictor
+# def deploy_model(model_data, role):
+#     model = Model(model_data=model_data, role=role)
+#     predictor = model.deploy(initial_instance_count=1, instance_type='ml.c5.xlarge', accelerator_type='ml.eia1.medium')
+#     return predictor
 
 
 def run_model(predictor, data):
@@ -18,5 +39,4 @@ def run_model(predictor, data):
 
 
 if __file__ == '__main__':
-    predictor = deploy_model(model_data, role)
     run_model(predictor, data)
