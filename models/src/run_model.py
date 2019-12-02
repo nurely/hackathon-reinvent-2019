@@ -1,4 +1,5 @@
 import boto3
+import json
 from sagemaker.tensorflow.serving import Model
 
 
@@ -39,7 +40,18 @@ def run_model(predictor, data):
     return 'yes'
 
 
-if __file__ == '__main__':
-    bucket = "sentinel-s1-l1c"
-    prefix = "GRD/2019/12/2/EW/DH/S1B_EW_GRDM_1SDH_20191202T155715_20191202T155815_019188_0243A1_8786/measurement"
-    get_and_process_images(bucket, prefix, predictor=None)
+# {
+#   "Records": [
+#     {
+#       "Sns": {
+#         "Message": "{ "s3Buckets: [ "s3://…1B_EW_GRDM_1SDH_20191202T155715_20191202T155815_019188_0243A1_8786", "s3://…" ] }"
+#       }
+#     }
+#   ]
+# }
+def handler(snsEvent):
+    for record in snsEvent["Records"]:
+      messageObj = json.loads(record["Sns"]["Message"])
+      for bucket in messageObj["s3Buckets"]:
+        prefix = "GRD/2019/12/2/EW/DH/S1B_EW_GRDM_1SDH_20191202T155715_20191202T155815_019188_0243A1_8786/measurement"
+        get_and_process_images(bucket, prefix, predictor=None)
