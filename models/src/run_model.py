@@ -29,6 +29,7 @@ def get_and_process_images(bucket, prefix, predictor):
                     results = run_model(predictor, data)
                     if results == 'yes': # need to check this
                         positive_list.append(obj['Key'])
+    print(positive_list)
     return positive_list
 
 
@@ -40,18 +41,13 @@ def get_and_process_images(bucket, prefix, predictor):
 
 def run_model(predictor, data):
     # predictor = model.deploy(initial_instance_count=1, instance_type='ml.c5.xlarge')
-    return 'yes'
+    if next(data)[0]%2 == 0:
+        return 'yes'
+    else:
+        return 'no'
 
 
-# {
-#   "Records": [
-#     {
-#       "Sns": {
-#         "Message": "{ "s3Buckets: [ "s3://sentinel/…1B_EW_GRDM_1SDH_20191202T155715_20191202T155815_019188_0243A1_8786", "s3://…" ] }"
-#       }
-#     }
-#   ]
-# }
+
 def handler(snsEvent):
     for record in snsEvent["Records"]:
       messageObj = json.loads(record["Sns"]["Message"])
