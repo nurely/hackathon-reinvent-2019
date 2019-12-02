@@ -20,13 +20,15 @@ def get_and_process_images(bucket, prefix, predictor):
 
     positive_list = []
     for page in pages:
-        for obj in page['Contents']:
-            # print(obj['Key'])
-            response = client.get_object(Bucket=bucket, Key=obj['Key'], RequestPayer='requester')
-            data = response['Body']
-            results = run_model(predictor, data)
-            if results == 'yes': # need to check this
-                positive_list.append(obj['Key'])
+        if 'Contents' in page:
+            for obj in page['Contents']:
+                print(obj['Key'])
+                if obj['Key'].endswith('.tiff'): 
+                    response = client.get_object(Bucket=bucket, Key=obj['Key'], RequestPayer='requester')
+                    data = response['Body']
+                    results = run_model(predictor, data)
+                    if results == 'yes': # need to check this
+                        positive_list.append(obj['Key'])
     return positive_list
 
 
@@ -54,7 +56,8 @@ def handler(snsEvent):
     for record in snsEvent["Records"]:
       messageObj = json.loads(record["Sns"]["Message"])
       for bucket in messageObj["s3Buckets"]:
-        baseBucket = bucket.split("//"])[1].split("/")[0]
-        prefix = '/'.join(bucket.split("//"])[1].split("/")[1:])
+        baseBucket = bucket.split("//")[1].split("/")[0]
+        prefix = '/'.join(bucket.split("//")[1].split("/")[1:]) + '/measurement'
+#         print(prefix)
         # "GRD/2019/12/2/EW/DH/S1B_EW_GRDM_1SDH_20191202T155715_20191202T155815_019188_0243A1_8786/measurement"
         get_and_process_images(baseBucket, prefix, predictor=None)
