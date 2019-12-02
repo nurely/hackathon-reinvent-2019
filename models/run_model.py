@@ -15,11 +15,12 @@ def get_and_process_images(bucket, prefix, predictor):
 
     # Create a PageIterator from the Paginator
 #     bucket = "sagemaker-us-east-1-433390365361"
-    pages = paginator.paginate(Bucket=bucket, RequestPayer='requester')
+    pages = paginator.paginate(Bucket=bucket, Prefix=prefix, RequestPayer='requester')
 
     positive_list = []
     for page in pages:
         for obj in page['Contents']:
+            # print(obj['Key'])
             response = client.get_object(Bucket=bucket, Key=obj['Key'], RequestPayer='requester')
             data = response['Body']
             results = run_model(predictor, data)
