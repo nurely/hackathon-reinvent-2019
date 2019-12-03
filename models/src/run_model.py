@@ -1,11 +1,9 @@
-import boto3
 import json
-from sagemaker.tensorflow.serving import Model
+import boto3
+import uuid
+import datetime
 
-
-# _model_data = "s3://sagemaker-us-east-1-433390365361/model/model.tar.gz"
-# _role = 'SagemakerAdmin'
-
+modelVersion = '0.0.1'
 
 def get_and_process_images(bucket, prefix, predictor):
     # Create a client
@@ -32,28 +30,38 @@ def get_and_process_images(bucket, prefix, predictor):
     print(positive_list)
     return positive_list
 
-
-# def deploy_model(model_data, role):
-#     model = Model(model_data=model_data, role=role)
-#     predictor = model.deploy(initial_instance_count=1, instance_type='ml.c5.xlarge', accelerator_type='ml.eia1.medium')
-#     return predictor
-
-
 def run_model(predictor, data):
     # predictor = model.deploy(initial_instance_count=1, instance_type='ml.c5.xlarge')
-    if next(data)[0]%2 == 0:
+    if next(data)[0]%2 == 1:
         return 'yes'
     else:
         return 'no'
 
-
-
-def handler(snsEvent):
+def lambda_handler(snsEvent, context):
+    print(snsEvent['Records'][0])
+    
+    dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+    table = dynamodb.Table('OilSpill')
+    
     for record in snsEvent["Records"]:
       messageObj = json.loads(record["Sns"]["Message"])
       for bucket in messageObj["s3Buckets"]:
         baseBucket = bucket.split("//")[1].split("/")[0]
         prefix = '/'.join(bucket.split("//")[1].split("/")[1:]) + '/measurement'
-#         print(prefix)
-        # "GRD/2019/12/2/EW/DH/S1B_EW_GRDM_1SDH_20191202T155715_20191202T155815_019188_0243A1_8786/measurement"
-        get_and_process_images(baseBucket, prefix, predictor=None)
+        foundSpills = get_and_process_images(baseBucket, prefix, predictor=None)
+        for spill in foundSpills:
+          table.put_item(
+            Item={
+                  'id': str(uuid.uuid4()),
+                  's3-key': spill,
+                  'isSpill': 1,
+                  'modelVersion': modelVersion,
+                  'createdAt': str(datetime.datetime.now())
+              }
+          )
+
+    # TODO implement
+    return {
+        'statusCode': 200,
+        'body': json.dumps({ 'foundSpills': len(foundSpills) })
+    }
