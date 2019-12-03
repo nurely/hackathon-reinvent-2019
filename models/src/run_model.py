@@ -2,6 +2,7 @@ import json
 import boto3
 import uuid
 import datetime
+from time import sleep
 
 modelVersion = '0.0.1'
 
@@ -32,6 +33,7 @@ def get_and_process_images(bucket, prefix, predictor):
 
 def run_model(predictor, data):
     # predictor = model.deploy(initial_instance_count=1, instance_type='ml.c5.xlarge')
+    sleep(2)
     if next(data)[0]%2 == 1:
         return 'yes'
     else:
